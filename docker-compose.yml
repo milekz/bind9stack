@@ -1,0 +1,47 @@
+version: "3.7"
+
+networks:
+  dnsnet:
+    driver: overlay
+    attachable: true
+
+configs:
+  bind_config:
+    file: ./config.tar.gz
+
+services:
+  bind:
+    image: milekz/bind:9.14.1 
+    networks:
+      - dnsnet
+    command: sh -c "tar -xzvf config.tar.gz -C /etc && /start.sh"
+    configs:
+      - source: bind_config
+        target: /config.tar.gz
+    deploy:
+      mode: global
+#      placement:
+#        constraints:
+#          - node.role == worker
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.50'
+        reservations:
+          memory: 64M
+          cpus: '0.25'
+    ports:
+      - "53:53/udp"
+      - "53:53"
+    logging:
+      driver: syslog
+      options:
+        syslog-facility: ${SYSYLOG_FACILITY:-local5}
+        syslog-format: rfc3164
+#        syslog-address: udp://10.255.254.29:514
+        syslog-address: udp://${SYSYLOG_DST:-192.168.1.1}:514
+        tag: bind9
+
+
+
+
